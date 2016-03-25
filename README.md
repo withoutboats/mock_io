@@ -68,6 +68,7 @@ they land.
 because it expands code which uses those features inside your tests.
 * The syntax of using it is quite arcane, requiring both `PhantomData` _and_
 higher-ranked lifetimes.
+* It uses unsafe, maybe its unsound.
 
 # License
 

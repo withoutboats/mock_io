@@ -35,7 +35,7 @@ macro_rules! use_mock_stdio {
             }
         
             pub fn check_stderr<F>(check: F) where F: FnOnce(&[u8]) {
-                check(&MOCK_STDIO.error().get_data().expect("Stdout mutex poisoned"));
+                check(&MOCK_STDIO.error().get_data().expect("Stderr mutex poisoned"));
             }
             
             pub struct MockStdio {
