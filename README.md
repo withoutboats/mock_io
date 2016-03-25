@@ -24,7 +24,8 @@ impl<T> Foo<T> where T: for<'a> Io<'a> {
     fn bar(&mut self) -> io::Result<()> {
         ...
         let mut buf = [0; 1024];
-        T::stdin().read(&mut buf)?;
+        let len = T::stdin().read(&mut buf)?;
+        T::stdout().write(&buf[..len]);
         ...
     }
 }
@@ -41,13 +42,14 @@ extern crate mock_io;
 
 #[test]
 fn test_foo_bar() {
+    const RELOCATE_TO_SF: &'static [u8] = b"It is a truth universally acknowledged that a single "
+                                           "man in possession of a good fortune must be willing "
+                                           "to relocate to San Francisco.";
     use_mock_stdio!();
-    mock_stdio::set_stdin(b"It is a truth universally acknowledged, that a "
-                           "single man in possession of a good fortune must "
-                           "be willing to relocate to San Francisco.");
     ...
     let foo = Foo::<mock_stdio::MockStdio>::new();
-    assert!(foo.bar()is_ok());
+    assert!(foo.bar().is_ok());
+    mock_stdio::check_stdout(|stdout| assert_eq!(stdout, RELOCATE_TO_SF);
     ...
 }
 ```
