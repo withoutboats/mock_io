@@ -21,18 +21,14 @@ fn test_stdin() {
 fn test_stdout() {
     use_mock_stdio!();
     mock_stdio::stdout().write(b"Hello, world!").unwrap();
-    mock_stdio::check_stdout(|stdout| {
-        assert_eq!(stdout, b"Hello, world!");
-    });
+    mock_stdio::check_stdout(|stdout| assert_eq!(stdout, b"Hello, world!"));
 }
 
 #[test]
 fn test_stderr() {
     use_mock_stdio!();
     mock_stdio::stderr().write(b"Danger, Will Robinson!").unwrap();
-    mock_stdio::check_stderr(|stderr| {
-        assert_eq!(stderr, b"Danger, Will Robinson!");
-    });
+    mock_stdio::check_stderr(|stderr| assert_eq!(stderr, b"Danger, Will Robinson!"));
 }
 
 #[test]
@@ -53,11 +49,11 @@ fn test_isolation() {
     second_test();
 }
 
-struct Foo<T: Io=Stdio> {
+struct Foo<T=Stdio> where T: for<'a> Io<'a> {
     _spoopy: PhantomData<T>
 }
 
-impl<T=Stdio> Foo<T> where T: Io {
+impl<T=Stdio> Foo<T> where T: for<'a> Io<'a> {
     fn print(data: &[u8]) {
         T::stdout().write(data).unwrap();
     }
@@ -78,10 +74,10 @@ fn test_without_mock_stdio() {
     mock_stdio::check_stdout(|stdout| assert_eq!(stdout, b"Hello, world!"));
 }
 
-fn echo<T: Io>() {
-    let mut buf = [0; 128];
-    let len = T::stdin().read(&mut buf).unwrap();
-    T::stdout().write(&buf[..len]).unwrap();
+fn echo<T>() where T: for<'a> Io<'a> {
+    let mut buf = String::new();
+    T::stdin_read_line(&mut buf).unwrap();
+    T::stdout().write(buf.as_bytes()).unwrap();
 }
 
 #[test]

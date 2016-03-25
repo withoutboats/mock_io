@@ -4,11 +4,11 @@ macro_rules! use_mock_stdio {
         #[allow(dead_code)]
         mod mock_stdio {
             use std::cell::Cell;
-            use std::io::Write;
+            use std::io::{self, BufRead, Write};
             use std::ptr;
             use std::sync::StaticMutex;
             
-            use mock_io::{Io, MockIo};
+            use mock_io::{Io, Lock, MockIo, MockIoLock};
 
             pub fn stdin() -> MockIo {
                 MockStdio::stdin()
@@ -46,6 +46,7 @@ macro_rules! use_mock_stdio {
                 init: fn() -> MockIo,
             }
     
+            unsafe impl Send for MockStdio { }
             unsafe impl Sync for MockStdio { }
             
             impl MockStdio {
@@ -53,12 +54,15 @@ macro_rules! use_mock_stdio {
                 fn input(&'static self) -> MockIo {
                     self.get(&self.input)
                 }
+
                 fn output(&'static self) -> MockIo {
                     self.get(&self.output)
                 }
+
                 fn error(&'static self) -> MockIo {
                     self.get(&self.error)
                 }
+
                 fn get(&'static self, cell: &Cell<*mut MockIo>) -> MockIo {
                     let _g = self.lock.lock();
                     let ptr = cell.get();
@@ -71,21 +75,35 @@ macro_rules! use_mock_stdio {
                         }
                     }
                 }
+
             }
             
-            impl Io for MockStdio {
+            impl<'a> Io<'a> for MockStdio {
                 type Input = MockIo;
+                type InputLock = MockIoLock<'a>;
                 type Output = MockIo;
+                type OutputLock = MockIoLock<'a>;
                 type Error = MockIo;
+                type ErrorLock = MockIoLock<'a>;
+
                 fn stdin() -> MockIo {
                     MOCK_STDIO.input()
                 }
+
                 fn stdout() -> MockIo {
                     MOCK_STDIO.output()
                 }
+
                 fn stderr() -> MockIo {
                     MOCK_STDIO.error()
                 }
+
+                fn stdin_read_line(buf: &mut String) -> io::Result<usize> {
+                    let input = MOCK_STDIO.input();
+                    let res = input.lock().read_line(buf);
+                    res
+                }
+
             }
             
             pub static MOCK_STDIO: MockStdio = MockStdio {
