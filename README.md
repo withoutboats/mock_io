@@ -47,6 +47,7 @@ fn test_foo_bar() {
                                            "to relocate to San Francisco.";
     use_mock_stdio!();
     ...
+    mock_stdio::set_stdin(RELOCATE_TO_SF);
     let foo = Foo::<mock_stdio::MockStdio>::new();
     assert!(foo.bar().is_ok());
     mock_stdio::check_stdout(|stdout| assert_eq!(stdout, RELOCATE_TO_SF);
